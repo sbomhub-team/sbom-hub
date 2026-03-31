@@ -20,6 +20,7 @@ jobs:
       contents: read
 
     env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       IMAGE_NAME: sbomhub/sbom-frontend
       DEPLOYMENT_NAME: sbom-frontend
       K8S_NAMESPACE: sbom
@@ -27,6 +28,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Validate Docker secrets presence
+        run: |
+          if [ -z "${{ secrets.DOCKERHUB_USERNAME }}" ]; then
+            echo "DOCKERHUB_USERNAME is empty or missing"
+            exit 1
+          fi
+          if [ -z "${{ secrets.DOCKERHUB_TOKEN }}" ]; then
+            echo "DOCKERHUB_TOKEN is empty or missing"
+            exit 1
+          fi
+          echo "Docker secrets are present"
 
       - name: Set short SHA tag
         id: vars
