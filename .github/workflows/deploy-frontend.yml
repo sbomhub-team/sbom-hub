@@ -31,13 +31,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Validate Docker secrets presence
+      - name: Validate deploy configuration
         run: |
+          missing=""
           if [ -z "${{ env.DOCKERHUB_TOKEN }}" ]; then
-            echo "DOCKERHUB_TOKEN is empty or missing in both Secrets and Variables"
+            missing="$missing DOCKERHUB_TOKEN"
+          fi
+          if [ -z "${{ secrets.SSH_HOST }}" ]; then
+            missing="$missing SSH_HOST"
+          fi
+          if [ -z "${{ secrets.SSH_USER }}" ]; then
+            missing="$missing SSH_USER"
+          fi
+          if [ -z "${{ secrets.SSH_PRIVATE_KEY }}" ]; then
+            missing="$missing SSH_PRIVATE_KEY"
+          fi
+
+          if [ -n "$missing" ]; then
+            echo "Missing required configuration:$missing"
             exit 1
           fi
-          echo "Docker token is present"
+
+          echo "All required deploy configuration is present"
 
       - name: Set short SHA tag
         id: vars
