@@ -87,26 +87,10 @@ Requirements:
 
 ### Deployment Flow
 
-1. Docker images are automatically built and pushed to the registry via CI/CD
+1. Container images are published to your registry
 2. Kubernetes manifests define services, deployments, storage, and ingress
 3. Deploy all manifests to activate the platform
 4. Users connect via the web dashboard or CLI
-
----
-
-## CI/CD Pipeline (Internal)
-
-SBOM Hub uses GitHub Actions for automated image building and deployment. The source code is proprietary and available only to the development team.
-
-### Automated Workflows
-
-Three workflows orchestrate the build and deployment pipeline:
-
-1. **Deploy Scanner** — Builds the Syft-based SBOM scanner image
-2. **Deploy Backend** — Builds the REST API and orchestration service
-3. **Deploy Frontend** — Builds the React web dashboard
-
-All images are pushed to Docker Hub and automatically updated in the Kubernetes cluster.
 
 ---
 
@@ -114,7 +98,6 @@ All images are pushed to Docker Hub and automatically updated in the Kubernetes 
 
 ```
 sbom-hub/
-├── README.md                          # This file
 ├── k8s/                               # Kubernetes deployment manifests
 │   ├── 00-namespace.yaml
 │   ├── 01-storage.yaml
@@ -123,22 +106,15 @@ sbom-hub/
 │   ├── 04-backend.yaml
 │   ├── 05-frontend.yaml
 │   ├── 06-ingress.yaml
-│   ├── 07-cluster-issuer.yaml
-│   ├── deploy-to-hetzner.sh
-│   └── README.md
-├── .github/
-│   └── workflows/                     # Automated CI/CD (internal)
-│       ├── deploy-scanner.yml
-│       ├── deploy-backend.yml
-│       └── deploy-frontend.yml
-└── Source code directories            # Proprietary, not available publicly
+│   └── 07-cluster-issuer.yaml
+└── README.md                          # This file
 ```
 
 ---
 
 ## Security & Privacy
 
-- SBOM Hub is a **closed-source** commercial platform
+- SBOM Hub is a closed-source commercial platform
 - Source code is available only to authorized team members
 - All deployments use HTTPS with Let's Encrypt TLS
 - Projects and results are stored in encrypted persistent volumes
@@ -155,7 +131,7 @@ For deployment, licensing, or technical support, contact the SBOM Hub team.
 
 ## Attribution
 
-SBOM Hub is developed by the **SBOMHub Team**:
+SBOM Hub is developed by the SBOMHub Team:
 - Elahm Rastighahfarokhi
 - Mehdi Nourivahid
 - Mostafa Sharghi
@@ -168,12 +144,3 @@ SBOM Hub is developed by the **SBOMHub Team**:
 - Syft Scanner: https://github.com/anchore/syft
 - Kubernetes: https://kubernetes.io
 - EU Cyber Resilience Act (CRA): https://www.europarl.europa.eu
-
----
-
-## Links
-
-- 🔗 **Live Demo**: https://sbom-hub.com
-- 📚 **SPDX Spec**: https://spdx.dev
-- 🏴‍☠️ **Syft (scanner)**: https://github.com/anchore/syft
-- ☸️ **Kubernetes**: https://kubernetes.io
