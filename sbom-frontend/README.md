@@ -1,50 +1,24 @@
 # sbom-frontend — Web Dashboard
 
-React + Vite web interface for SBOM Hub.
+The frontend service provides the user-facing web interface for SBOM Hub.
 
 ## Features
 
-- 🎨 **Modern UI** — Built with React and Tailwind CSS
-- 📱 **Responsive** — Works on desktop and mobile
-- 🔄 **Real-time Updates** — Connects to backend API
-- 📊 **SBOM Visualization** — Browse deps, licenses, vulnerabilities
-- ⚡ **Fast** — Vite for hot module replacement
+- Interactive web dashboard for project uploads
+- Real-time SBOM visualization
+- Dependency and license information display
+- Download SBOM in SPDX JSON format
+- Responsive design for desktop and mobile
 
-## Development
+## Cloud Deployment
 
-```bash
-npm install
-npm run dev
-# Opens http://localhost:5173
-```
+This service is deployed as a Kubernetes Deployment in the `sbom` namespace. See [k8s/05-frontend.yaml](../k8s/05-frontend.yaml) for deployment configuration.
 
-## Build for Production
+The service is exposed through an Ingress that:
+- Routes requests to the Kubernetes Service
+- Handles HTTPS/TLS via cert-manager
+- Proxies `/api` requests to the backend service
+- Serves static assets for the React dashboard
 
-```bash
-npm run build
-# Creates dist/ folder for serving
-```
+The frontend connects to the backend API at `/api` endpoint as configured in the Kubernetes Ingress rules.
 
-## Docker
-
-```bash
-docker build -t sbomhub/sbom-frontend .
-docker run -p 80:80 sbomhub/sbom-frontend
-```
-
-## Configuration
-
-The frontend connects to the backend API at:
-
-```javascript
-// src/api.js
-const API_BASE = process.env.REACT_APP_API || '/api'
-```
-
-In Kubernetes, the ingress routes `/api` to the backend service and `/` to the frontend service.
-
-## Kubernetes
-
-See [k8s/05-frontend.yaml](../k8s/05-frontend.yaml) for deployment manifest.
-
-The frontend runs as a static web server (Nginx in the Docker image) and the ingress handles routing.

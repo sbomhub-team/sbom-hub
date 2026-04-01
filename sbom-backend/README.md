@@ -1,33 +1,22 @@
-# sbom-backend — REST API & Orchestration
+# sbom-backend — REST API
 
-Node.js/Express backend service that provides:
+The backend service provides the REST API for SBOM Hub and orchestrates scanning jobs on Kubernetes.
 
-- **REST API** — POST project files to `/api/scan` for SBOM generation
-- **Workspace Management** — Stores upload history and results in MongoDB
-- **Kubernetes Job Orchestration** — Spawns `sbom-scanner` pod for each scan
-- **Environment Config** — Reads `SCANNER_IMAGE` env var to know which scanner Docker image to run
+## Functionality
 
-## Development
+- REST API for SBOM generation requests
+- Workspace and project management
+- Kubernetes Job orchestration for scanner pods
+- MongoDB integration for persistent storage
+- Environment-based configuration for scanner image selection
 
-```bash
-npm install
-npm start
-# Server listens on :3000
-```
+## Cloud Deployment
 
-## Docker
+This service is deployed as a Kubernetes Deployment in the `sbom` namespace. See [k8s/04-backend.yaml](../k8s/04-backend.yaml) for deployment configuration.
 
-```bash
-docker build -t sbomhub/sbom-backend .
-docker run -e SCANNER_IMAGE=sbomhub/sbom-scanner:latest sbomhub/sbom-backend
-```
+The service requires:
+- Kubernetes API access (RBAC configured)
+- MongoDB connection
+- Persistent volume for shared workspace
+- `SCANNER_IMAGE` environment variable pointing to the scanner image
 
-## Kubernetes
-
-See [k8s/04-backend.yaml](../k8s/04-backend.yaml) for deployment manifest.
-
-The backend pod needs:
-- `SCANNER_IMAGE` env var set to the scanner image tag
-- Access to Kubernetes API (RBAC configured in `k8s/03-rbac.yaml`)
-- MongoDB connection (address from `k8s/02-mongo.yaml`)
-- Shared PVC for workspace `/app/workspace`

@@ -4,192 +4,109 @@
 
 ## Features
 
-- 🔄 **Automatic SBOM Generation** — Upload a project and get a complete SBOM
-- 📊 **Analysis & Insights** — Detailed breakdowns of dependencies and security metadata
-- 🎯 **Multiple Formats** — SPDX JSON output with structured insights
-- 🖥️ **Web UI** — Interactive React-based dashboard
-- 💻 **CLI Tool** — `sbomhub` command for terminal-based generation and reporting
-- ☸️ **Cloud Ready** — Kubernetes-native deployment with automated scanning
+- **Automatic SBOM Generation** — Upload a project and get a complete SBOM
+- **Analysis & Insights** — Detailed breakdowns of dependencies and security metadata
+- **Multiple Formats** — SPDX JSON output with structured insights
+- **Web UI** — Interactive React-based dashboard
+- **CLI Tool** — `sbomhub` command for terminal-based generation and reporting
+- **Cloud Native** — Kubernetes-native deployment with automated scanning
 
 ---
 
 ## Architecture
 
-### Components
+SBOM Hub is a distributed cloud-native platform designed to run on Kubernetes:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    User                                 │
+│                  End User                               │
 ├─────────────────────────────────────────────────────────┤
-│ Browser (React UI) ←→ CLI Tool (Node.js)                │
+│ Web Browser or CLI Tool (Node.js)                       │
 └──────────────┬──────────────────────────────────────────┘
-               │ HTTPS
+               │ HTTPS to Ingress
 ┌──────────────▼──────────────────────────────────────────┐
-│              sbom-backend (Node.js)                      │
-│  • REST API for SBOM generation                         │
-│  • Workspace management                                 │
-│  • Kubernetes job orchestration                         │
+│         SBOM Hub Backend (Kubernetes)                   │
+│  REST API for SBOM generation                          │
+│  Workspace management                                   │
+│  Kubernetes job orchestration                           │
 └──────────────┬──────────────────────────────────────────┘
-               │ triggers Docker image
+               │ spawns Jobs
 ┌──────────────▼──────────────────────────────────────────┐
-│        sbom-scanner (Python + Syft)                     │
-│  • Runs in Kubernetes as ephemeral jobs                 │
-│  • Uses Syft for SBOM scanning                          │
-│  • Analyzes project dependencies                        │
+│    SBOM Scanner Pod (Ephemeral, Per-Request)            │
+│  Python + Syft for dependency analysis                 │
+│  Generates SPDX JSON SBOM                              │
 └──────────────┬──────────────────────────────────────────┘
-               │ reads/writes
+               │ persists to
 ┌──────────────▼──────────────────────────────────────────┐
-│         MongoDB + PVC Storage                           │
-│  • Persists SBOM results and metadata                   │
-│  • Shared workspace for scan jobs                       │
+│      MongoDB + Persistent Volume Storage                │
+│  Results, metadata, and user projects                  │
 └─────────────────────────────────────────────────────────┘
 ```
 
-### Services
+### Components
 
-| Service | Language | Purpose |
-|---------|----------|---------|
-| **sbom-frontend** | React + Vite | Web dashboard UI |
-| **sbom-backend** | Node.js/Express | REST API & job orchestration |
-| **sbom-scanner** | Python | SBOM generation via Syft |
-| **sbom-cli** | Node.js | Command-line tool |
-
----
-
-## Quick Start
-
-### Prerequisites
-
-- Docker & Docker Hub account
-- Kubernetes cluster (or local `kubectl` for testing)
-- Node.js 18+ (for local development)
-- Git
-
-### Local Development
-
-#### 1. Clone and setup
-
-```bash
-git clone https://github.com/sbomhub-team/sbom-hub.git
-cd sbom-hub
-
-# Install frontend dependencies
-cd sbom-frontend && npm install && cd ..
-
-# Install backend dependencies
-cd sbom-backend && npm install && cd ..
-```
-
-#### 2. Run locally (Docker Compose)
-
-```bash
-# From project root
-docker-compose -f sbom-backend/docker-compose.yml up
-docker-compose -f sbom-frontend/docker-compose.yml up
-```
-
-Services will be available at:
-- Frontend: `http://localhost:5173`
-- Backend API: `http://localhost:3000`
+| Component | Technology | Purpose |
+|-----------|-----------|---------|
+| Frontend | React + Vite | Web dashboard UI (served via Nginx) |
+| Backend | Node.js/Express | REST API & Kubernetes job orchestration |
+| Scanner | Python + Syft | SBOM generation (runs as ephemeral K8s Jobs) |
+| CLI | Node.js | Command-line interface for terminal users |
+| Data | MongoDB + PVC | Persistent storage for results and projects |
 
 ---
 
-## CI/CD Pipeline
+## Usage
 
-SBOM Hub uses **GitHub Actions** for automated building, testing, and deployment.
+### Web Dashboard
 
-### Three Workflows
+Visit the SBOM Hub dashboard UI, upload your project, and download the SBOM JSON.
 
-#### 1. **Deploy Scanner** (`→ sbomhub/sbom-scanner`)
-- **Trigger**: Push to `sbom-job/**` or manual trigger
-- **Steps**:
-  1. Checkout repo
-  2. Parse `secrets.SECRET` (bundled credentials)
-  3. Build Docker image from `./sbom-job/Dockerfile`
-  4. Push to Docker Hub as `sbomhub/sbom-scanner:tag` and `:latest`
-  5. SSH into K8s cluster, update backend's `SCANNER_IMAGE` env var
-  6. Wait for pod rollout to complete
+### Command-Line Interface
 
-#### 2. **Deploy Backend** (`→ sbomhub/sbom-backend`)
-- **Trigger**: Push to `sbom-backend/**`, `k8s/04-backend.yaml`, or workflow file
-- **Steps**:
-  1. Checkout, parse secrets, generate short SHA tag
-  2. Build multi-platform Docker image (`linux/amd64`)
-  3. Push to Docker Hub as `sbomhub/sbom-backend:tag` and `:latest`
-  4. SSH into K8s:
-     - `kubectl set image` — rolling update of backend pods
-     - `kubectl set env SCANNER_IMAGE=...` — ensure scanner image is known
-     - `kubectl rollout status` — wait for pods to become ready (240s timeout)
-     - `kubectl get pods` — verify final state
-
-#### 3. **Deploy Frontend** (`→ sbomhub/sbom-frontend`)
-- **Trigger**: Push to `sbom-frontend/**`, `k8s/05-frontend.yaml`, or workflow file
-- **Steps**: Same as backend, but:
-  - Builds `./sbom-frontend/` with Vite
-  - Pushes as `sbomhub/sbom-frontend:tag`
-  - Updates K8s `sbom-frontend` deployment
-
-### Secret Configuration
-
-Workflows read credentials from a single bundled GitHub secret named `SECRET`:
-
-```
-DOCKERHUB_USERNAME=sbomhub
-DOCKERHUB_TOKEN=<your_pat>
-SSH_HOST=37.27.196.84
-SSH_USER=root
-SSH_PORT=22
-SSH_PRIVATE_KEY<<KEY
------BEGIN OPENSSH PRIVATE KEY-----
-...
------END OPENSSH PRIVATE KEY-----
-KEY
-```
-
-Set this in: **Settings → Secrets and variables → Actions → New repository secret**
-
-### Testing the Pipeline
-
-**Option A: Manual trigger**
-```
-GitHub → Actions → Choose workflow → Run workflow → main
-```
-
-**Option B: Auto-trigger via push**
 ```bash
-cd sbom-hub
-echo "# test" >> sbom-frontend/README.md
-git add sbom-frontend/README.md
-git commit -m "test: trigger CI"
-git push origin main
+sbomhub scan /path/to/project
+sbomhub list
+sbomhub download <scan-id>
 ```
-
-Monitor at: **GitHub → Actions → [workflow name]**
 
 ---
 
-## Kubernetes Deployment
+## Cloud-Native Deployment
 
-### Full docs: [k8s/README.md](k8s/README.md)
+SBOM Hub is designed to run on Kubernetes clusters. All deployment manifests are provided in `k8s/` directory.
 
-Quick deploy:
+### Quick Deploy
 
-```bash
-# Set your config
-export DOCKERHUB_USER=sbomhub
-export TAG=v1.0.0
-export LETSENCRYPT_EMAIL=your@email.com
+See [k8s/README.md](k8s/README.md) for complete deployment instructions.
 
-# Deploy to Hetzner (or any cluster)
-./k8s/deploy-to-hetzner.sh
-```
+Requirements:
+- Kubernetes cluster (1.20+)
+- cert-manager (for TLS)
+- ingress-nginx (for routing)
+- Persistent volumes for MongoDB and workspace storage
 
-Verify:
+### Deployment Flow
 
-```bash
-kubectl get pods -n sbom
-kubectl logs -n sbom deploy/sbom-backend
-```
+1. Docker images are automatically built and pushed to the registry via CI/CD
+2. Kubernetes manifests define services, deployments, storage, and ingress
+3. Deploy all manifests to activate the platform
+4. Users connect via the web dashboard or CLI
+
+---
+
+## CI/CD Pipeline (Internal)
+
+SBOM Hub uses GitHub Actions for automated image building and deployment. The source code is proprietary and available only to the development team.
+
+### Automated Workflows
+
+Three workflows orchestrate the build and deployment pipeline:
+
+1. **Deploy Scanner** — Builds the Syft-based SBOM scanner image
+2. **Deploy Backend** — Builds the REST API and orchestration service
+3. **Deploy Frontend** — Builds the React web dashboard
+
+All images are pushed to Docker Hub and automatically updated in the Kubernetes cluster.
 
 ---
 
@@ -198,56 +115,59 @@ kubectl logs -n sbom deploy/sbom-backend
 ```
 sbom-hub/
 ├── README.md                          # This file
+├── k8s/                               # Kubernetes deployment manifests
+│   ├── 00-namespace.yaml
+│   ├── 01-storage.yaml
+│   ├── 02-mongo.yaml
+│   ├── 03-rbac.yaml
+│   ├── 04-backend.yaml
+│   ├── 05-frontend.yaml
+│   ├── 06-ingress.yaml
+│   ├── 07-cluster-issuer.yaml
+│   ├── deploy-to-hetzner.sh
+│   └── README.md
 ├── .github/
-│   └── workflows/
-│       ├── deploy-scanner.yml         # Scanner CI/CD
-│       ├── deploy-backend.yml         # Backend CI/CD
-│       └── deploy-frontend.yml        # Frontend CI/CD
-├── sbom-frontend/                     # React dashboard
-│   ├── src/
-│   ├── Dockerfile
-│   └── package.json
-├── sbom-backend/                      # Node.js API
-│   ├── server.js
-│   ├── Dockerfile
-│   └── package.json
-├── sbom-job/                          # Python scanner
-│   ├── sbom_generator.py
-│   └── Dockerfile
-├── sbom-cli/                          # Terminal CLI
-│   ├── package.json
-│   └── bin/sbomhub.js
-└── k8s/                               # Kubernetes manifests
-    ├── 00-namespace.yaml
-    ├── 02-mongo.yaml
-    ├── 04-backend.yaml
-    ├── 05-frontend.yaml
-    ├── 06-ingress.yaml
-    └── README.md                      # Deployment instructions
+│   └── workflows/                     # Automated CI/CD (internal)
+│       ├── deploy-scanner.yml
+│       ├── deploy-backend.yml
+│       └── deploy-frontend.yml
+└── Source code directories            # Proprietary, not available publicly
 ```
 
 ---
 
-## Contributing
+## Security & Privacy
 
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feature/your-feature`)
-3. **Commit** changes (`git commit -m "feat: add thing"`)
-4. **Push** (`git push origin feature/your-feature`)
-5. **Open a Pull Request**
-
-All PRs trigger the CI pipeline automatically.
+- SBOM Hub is a **closed-source** commercial platform
+- Source code is available only to authorized team members
+- All deployments use HTTPS with Let's Encrypt TLS
+- Projects and results are stored in encrypted persistent volumes
+- Scanning jobs run in isolated, ephemeral Kubernetes pods
+- No data is shared with third parties
 
 ---
 
-## License & Attribution
+## Support & Licensing
 
-This project is a thesis project by the **SBOMHub Team**:
+For deployment, licensing, or technical support, contact the SBOM Hub team.
+
+---
+
+## Attribution
+
+SBOM Hub is developed by the **SBOMHub Team**:
 - Elahm Rastighahfarokhi
 - Mehdi Nourivahid
 - Mostafa Sharghi
 
-Motivated by the **EU Cyber Resilience Act (CRA)**.
+---
+
+## References
+
+- SPDX Specification: https://spdx.dev
+- Syft Scanner: https://github.com/anchore/syft
+- Kubernetes: https://kubernetes.io
+- EU Cyber Resilience Act (CRA): https://www.europarl.europa.eu
 
 ---
 

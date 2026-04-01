@@ -1,29 +1,17 @@
-# sbom-job — Scanner Image
+# sbom-scanner — SBOM Generation Service
 
-Python-based SBOM scanner that runs as a Kubernetes job per scan request.
+The scanner service generates Software Bills of Materials (SBOM) for uploaded projects.
 
 ## Purpose
 
-- Receives a project as input (file upload via shared PVC)
-- Uses **Syft** CLI to analyze dependencies
-- Generates SPDX JSON SBOM output
-- Returns results to shared workspace for backend to retrieve
+- Analyzes project structure and dependencies
+- Generates SPDX JSON format SBOM output
+- Runs as ephemeral Kubernetes Jobs (one job per scan)
+- Processes projects from shared workspace storage
 
-## Components
+## Cloud Deployment
 
-- **sbom_generator.py** — Main entry point, orchestrates scanning
-- **Dockerfile** — Builds image with Python 3.11, Syft, and dependencies
-
-## Docker
-
-```bash
-docker build -t sbomhub/sbom-scanner .
-docker run -v /host/workspace:/app/workspace sbomhub/sbom-scanner
-```
-
-## Kubernetes
-
-The backend (`sbom-backend`) spawns this image dynamically as a Job:
+The backend service creates a Kubernetes Job for each scan request, using this image as the container:
 
 ```yaml
 apiVersion: batch/v1
@@ -35,21 +23,18 @@ spec:
     spec:
       containers:
       - name: scanner
-        image: sbomhub/sbom-scanner:latest  # or specific tag
-        env:
-        - name: PROJECT_PATH
-          value: /workspace/{{uuid}}/project
+        image: sbomhub/sbom-scanner:latest
         volumeMounts:
         - name: workspace
           mountPath: /workspace
 ```
 
-## Build & Deploy
+The Job:
+- Receives project files from the shared workspace PVC
+- Generates SBOM analysis
+- Writes results back to the workspace
+- Exits upon completion
+- Is automatically cleaned up by Kubernetes garbage collection
 
-Pushed to Docker Hub via CI/CD:
+No manual scanning or configuration is required. All scanning is orchestrated automatically by the backend service.
 
-```bash
-git push sbom-job/**  # Triggers GitHub Actions → builds & pushes sbomhub/sbom-scanner
-```
-
-Backend is notified via `kubectl set env SCANNER_IMAGE=sbomhub/sbom-scanner:{{tag}}`.

@@ -1,53 +1,44 @@
 # sbom-cli — Command-Line Interface
 
-Node.js CLI tool for SBOM Hub, enabling terminal-based SBOM generation and management.
+Command-line tool for interacting with SBOM Hub from the terminal.
 
-## Installation
+## Features
 
-```bash
-npm install -g sbomhub
-# or
-npm install sbomhub
-```
+- Scan projects for SBOM generation
+- View scan history
+- Download SBOM results in JSON format
+- Analyze dependency information
+- Generate detailed reports
 
 ## Usage
 
 ```bash
-sbomhub scan /path/to/project
-sbomhub list                    # View past scans
-sbomhub download <scan-id>      # Download SBOM as JSON/SPDX
-sbomhub analyze <scan-id>       # Show dependency insights
-```
-
-## Development
-
-```bash
-npm install
-npm link  # Makes `sbomhub` command globally available locally
-
-sbomhub --help
-```
-
-## Build
-
-```bash
-npm run build
-npm publish  # to npm registry
+sbomhub scan <project-path>
+sbomhub list
+sbomhub download <scan-id>
+sbomhub analyze <scan-id>
+sbomhub report <scan-id>
 ```
 
 ## Configuration
 
-The CLI reads the API endpoint from:
+Configure the SBOM Hub server endpoint:
 
 ```bash
-SBOMHUB_API=http://localhost:3000 sbomhub scan ...
-# or ~/.sbomhub/config.json
+export SBOMHUB_API=https://your-sbom-hub-instance.com
+sbomhub scan /path/to/project
 ```
 
-## Entrypoint
+Or create a configuration file at `~/.sbomhub/config.json`:
 
-- Primary: `bin/sbomhub.js`
-- Communicates with backend API (REST)
-- Generates local SBOM reports and downloads
+```json
+{
+  "api": "https://your-sbom-hub-instance.com",
+  "timeout": 300
+}
+```
 
-See `package.json` for available npm scripts.
+## Cloud Deployment
+
+The CLI communicates with a deployed SBOM Hub instance via REST API. Point it to your cloud-hosted SBOM Hub deployment to use all features.
+
