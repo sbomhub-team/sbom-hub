@@ -1,16 +1,50 @@
-# React + Vite
+# sbom-frontend — Web Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + Vite web interface for SBOM Hub.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 🎨 **Modern UI** — Built with React and Tailwind CSS
+- 📱 **Responsive** — Works on desktop and mobile
+- 🔄 **Real-time Updates** — Connects to backend API
+- 📊 **SBOM Visualization** — Browse deps, licenses, vulnerabilities
+- ⚡ **Fast** — Vite for hot module replacement
 
-## React Compiler
+## Development
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+npm install
+npm run dev
+# Opens http://localhost:5173
+```
 
-## Expanding the ESLint configuration
+## Build for Production
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+npm run build
+# Creates dist/ folder for serving
+```
+
+## Docker
+
+```bash
+docker build -t sbomhub/sbom-frontend .
+docker run -p 80:80 sbomhub/sbom-frontend
+```
+
+## Configuration
+
+The frontend connects to the backend API at:
+
+```javascript
+// src/api.js
+const API_BASE = process.env.REACT_APP_API || '/api'
+```
+
+In Kubernetes, the ingress routes `/api` to the backend service and `/` to the frontend service.
+
+## Kubernetes
+
+See [k8s/05-frontend.yaml](../k8s/05-frontend.yaml) for deployment manifest.
+
+The frontend runs as a static web server (Nginx in the Docker image) and the ingress handles routing.
