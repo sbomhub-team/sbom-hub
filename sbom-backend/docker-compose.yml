@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  sbom-frontend:
+    build:
+      context: ../sbom-frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - VITE_API_URL=http://localhost:3001
+    restart: unless-stopped
+
+  sbom-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - FRONTEND_URL=http://localhost:3000
+      - API_BASE_URL=http://localhost:3001
+      - USE_K8S=false
+      - REAL_SBOM_ONLY=true
+      - SBOM_WORKSPACE_DIR=/Users/mostafasharghi/Desktop/sbom-workspace
+      - MONGO_URL=mongodb://mongodb:27017/sbom
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /Users/mostafasharghi/Desktop/sbom-workspace:/Users/mostafasharghi/Desktop/sbom-workspace
+    depends_on:
+      - sbom-frontend
+      - sbom-job
+      - mongodb
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})" ]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  sbom-job:
+    build:
+      context: ../sbom-job
+      dockerfile: Dockerfile
+    image: sbom-scanner:latest
+
+  mongodb:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    restart: unless-stopped
+
+volumes:
+  mongodb_data:

@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sbom-frontend
+  namespace: sbom
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: sbom-frontend
+  template:
+    metadata:
+      labels:
+        app: sbom-frontend
+    spec:
+      containers:
+        - name: sbom-frontend
+          image: sbomhub/sbom-frontend:v7
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 400m
+              memory: 512Mi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sbom-frontend
+  namespace: sbom
+spec:
+  selector:
+    app: sbom-frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 3000
