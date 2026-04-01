@@ -132,7 +132,7 @@ For deployment, licensing, or technical support, contact the SBOM Hub team.
 ## Attribution
 
 SBOM Hub is developed by the SBOMHub Team:
-- Elahm Rastighahfarokhi
+- Elham Rastighahfarokhi
 - Mehdi Nourivahid
 - Mostafa Sharghi
 
