@@ -136,6 +136,6 @@ jobs:
           script: |
             set -euo pipefail
             kubectl set image deployment/${{ env.DEPLOYMENT_NAME }} ${{ env.DEPLOYMENT_NAME }}=${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.tag }} -n ${{ env.K8S_NAMESPACE }}
-            kubectl set env deployment/${{ env.DEPLOYMENT_NAME }} SCANNER_IMAGE=${DOCKERHUB_USERNAME}/sbom-scanner:latest -n ${{ env.K8S_NAMESPACE }}
+            kubectl set env deployment/${{ env.DEPLOYMENT_NAME }} SCANNER_IMAGE=${{ env.DOCKERHUB_USERNAME }}/sbom-scanner:latest -n ${{ env.K8S_NAMESPACE }}
             kubectl rollout status deployment/${{ env.DEPLOYMENT_NAME }} -n ${{ env.K8S_NAMESPACE }} --timeout=240s
             kubectl get pods -n ${{ env.K8S_NAMESPACE }} -l app=${{ env.DEPLOYMENT_NAME }} -o custom-columns=NAME:.metadata.name,IMAGE:.spec.containers[0].image,READY:.status.containerStatuses[0].ready
