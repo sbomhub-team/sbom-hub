@@ -21,8 +21,6 @@ jobs:
 
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-      DOCKERHUB_USERNAME: sbomhub
-      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN || vars.DOCKERHUB_TOKEN }}
       IMAGE_NAME: sbomhub/sbom-backend
       DEPLOYMENT_NAME: sbom-backend
       K8S_NAMESPACE: sbom
@@ -31,28 +29,78 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Validate deploy configuration
+      - name: Parse SECRET bundle
         run: |
+          SECRET_BUNDLE=$(cat <<'EOF'
+          ${{ secrets.SECRET }}
+          EOF
+          )
+
           missing=""
-          if [ -z "${{ env.DOCKERHUB_TOKEN }}" ]; then
+
+          get_kv() {
+            printf '%s\n' "$SECRET_BUNDLE" | sed -n "s/^$1=//p" | head -n 1
+          }
+
+          DOCKERHUB_USERNAME="$(get_kv DOCKERHUB_USERNAME)"
+          DOCKERHUB_TOKEN="$(get_kv DOCKERHUB_TOKEN)"
+          SSH_HOST="$(get_kv SSH_HOST)"
+          SSH_USER="$(get_kv SSH_USER)"
+          SSH_PORT="$(get_kv SSH_PORT)"
+
+          SSH_PRIVATE_KEY="$({
+            printf '%s\n' "$SECRET_BUNDLE" | awk '
+              BEGIN {capture=0; delim=""}
+              /^SSH_PRIVATE_KEY<</ {delim=substr($0, index($0, "<<") + 2); capture=1; next}
+              capture && $0 == delim {capture=0; exit}
+              capture {print}
+            '
+          })"
+
+          if [ -z "$SSH_PRIVATE_KEY" ]; then
+            SSH_PRIVATE_KEY_ESCAPED="$(get_kv SSH_PRIVATE_KEY)"
+            if [ -n "$SSH_PRIVATE_KEY_ESCAPED" ]; then
+              SSH_PRIVATE_KEY="$(printf '%b' "$SSH_PRIVATE_KEY_ESCAPED")"
+            fi
+          fi
+
+          if [ -z "$DOCKERHUB_USERNAME" ]; then
+            missing="$missing DOCKERHUB_USERNAME"
+          fi
+          if [ -z "$DOCKERHUB_TOKEN" ]; then
             missing="$missing DOCKERHUB_TOKEN"
           fi
-          if [ -z "${{ secrets.SSH_HOST }}" ]; then
+          if [ -z "$SSH_HOST" ]; then
             missing="$missing SSH_HOST"
           fi
-          if [ -z "${{ secrets.SSH_USER }}" ]; then
+          if [ -z "$SSH_USER" ]; then
             missing="$missing SSH_USER"
           fi
-          if [ -z "${{ secrets.SSH_PRIVATE_KEY }}" ]; then
+          if [ -z "$SSH_PRIVATE_KEY" ]; then
             missing="$missing SSH_PRIVATE_KEY"
           fi
 
           if [ -n "$missing" ]; then
-            echo "Missing required configuration:$missing"
+            echo "Missing required values in SECRET:$missing"
             exit 1
           fi
 
-          echo "All required deploy configuration is present"
+          if [ -z "$SSH_PORT" ]; then
+            SSH_PORT="22"
+          fi
+
+          {
+            echo "DOCKERHUB_USERNAME=$DOCKERHUB_USERNAME"
+            echo "DOCKERHUB_TOKEN=$DOCKERHUB_TOKEN"
+            echo "SSH_HOST=$SSH_HOST"
+            echo "SSH_USER=$SSH_USER"
+            echo "SSH_PORT=$SSH_PORT"
+            echo "SSH_PRIVATE_KEY<<KEY_EOF"
+            echo "$SSH_PRIVATE_KEY"
+            echo "KEY_EOF"
+          } >> "$GITHUB_ENV"
+
+          echo "SECRET parsed successfully"
 
       - name: Set short SHA tag
         id: vars
@@ -81,10 +129,10 @@ jobs:
       - name: Deploy backend via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT || 22 }}
+          host: ${{ env.SSH_HOST }}
+          username: ${{ env.SSH_USER }}
+          key: ${{ env.SSH_PRIVATE_KEY }}
+          port: ${{ env.SSH_PORT }}
           script: |
             set -euo pipefail
             kubectl set image deployment/${{ env.DEPLOYMENT_NAME }} ${{ env.DEPLOYMENT_NAME }}=${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.tag }} -n ${{ env.K8S_NAMESPACE }}
