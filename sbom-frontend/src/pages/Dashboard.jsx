@@ -61,7 +61,7 @@ export default function Dashboard() {
     const sbomSummary = getSbomSummary(sbom)
 
     const waitForJobResult = async (jobId) => {
-        const maxAttempts = 60
+        const maxAttempts = 120
 
         for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
             await wait(3000)

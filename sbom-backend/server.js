@@ -1697,7 +1697,7 @@ async function generateRealSBOMFromGitHub(jobId, githubUrl) {
         if (!fs.existsSync(jobDir)) {
             fs.mkdirSync(jobDir, { recursive: true })
         }
-        fs.mkdirSync(projectDir, { recursive: true })
+        fs.rmSync(projectDir, { recursive: true, force: true })
         fs.mkdirSync(outputDir, { recursive: true })
 
         console.log(`📥 Cloning GitHub repo: ${githubUrl}`)

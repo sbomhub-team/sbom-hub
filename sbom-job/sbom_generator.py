@@ -6,13 +6,24 @@ import zipfile
 
 DEFAULT_WORK_DIR = "/workspace/project"
 OUTPUT_DIR = "/workspace/output"
+GIT_CLONE_TIMEOUT_SECONDS = int(os.environ.get("GIT_CLONE_TIMEOUT_SECONDS", "300"))
 
 def clone_repo(repo_url, work_dir):
     print(f"[INFO] Cloning repository: {repo_url}")
-    subprocess.run(["git", "clone", repo_url, work_dir], check=True)
+    parent_dir = os.path.dirname(work_dir)
+    os.makedirs(parent_dir, exist_ok=True)
+    shutil.rmtree(work_dir, ignore_errors=True)
+    subprocess.run(
+        ["git", "clone", "--depth", "1", "--single-branch", repo_url, work_dir],
+        check=True,
+        env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
+        timeout=GIT_CLONE_TIMEOUT_SECONDS
+    )
 
 def unzip_file(zip_path, work_dir):
     print(f"[INFO] Unzipping file: {zip_path}")
+    shutil.rmtree(work_dir, ignore_errors=True)
+    os.makedirs(work_dir, exist_ok=True)
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
         zip_ref.extractall(work_dir)
 
@@ -51,10 +62,8 @@ def main():
     cleanup_enabled = True
 
     if arg_type == "--repo":
-        os.makedirs(work_dir, exist_ok=True)
         clone_repo(arg_value, work_dir)
     elif arg_type == "--zip":
-        os.makedirs(work_dir, exist_ok=True)
         unzip_file(arg_value, work_dir)
     elif arg_type == "--path":
         # Use the provided directory directly
