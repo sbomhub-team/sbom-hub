@@ -46,7 +46,7 @@ export default function Home() {
                         <article className="rounded-xl border border-slate-500/50 bg-slate-800/55 p-4">
                             <h2 className="mb-3 text-xl font-semibold text-white">Sbomhub Team:</h2>
                             <ul className="space-y-2 text-slate-200">
-                                <li>Elahm Rastighahfarokhi</li>
+                                <li>Elham Rastighahfarokhi</li>
                                 <li>Mehdi Nourivahid</li>
                                 <li>Mostafa Sharghi</li>
                                 <li>Supervisor: Markku Niiranen</li>
