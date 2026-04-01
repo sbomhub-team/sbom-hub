@@ -32,7 +32,7 @@ export default function Home() {
                 </div>
 
                 <section className="rounded-2xl border border-slate-500/50 bg-slate-900/75 p-6 shadow-2xl shadow-slate-950/45 backdrop-blur-sm md:p-8">
-                    <h1 className="mb-3 text-4xl font-bold text-white md:text-5xl">SBOM Hub</h1>
+                    <h1 className="mb-3 text-4xl font-bold text-white md:text-5xl">SBOM HUB</h1>
                     <p className="mb-8 max-w-4xl text-base leading-7 text-slate-200 md:text-lg">
                         SBOMHub is a cloud-based thesis project that explores automatic generation of Software Bills of Materials (SBOM).
                         It addresses the challenge that SBOM creation can be complex and different across technologies.
