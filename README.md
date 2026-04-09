@@ -1,140 +1,146 @@
 # SBOM Hub — Automatic Software Bill of Materials Generation
 
-**SBOM Hub** is a cloud-based platform that automatically generates Software Bills of Materials (SBOM) in SPDX JSON format. It addresses the complexity of SBOM creation across different technologies and is motivated by the **EU Cyber Resilience Act (CRA)**, which mandates SBOMs by 2027.
+# SBOM Hub 
 
-## Features
+Is a cloud-native platform that automatically generates Software Bills of Materials (SBOM) in SPDX JSON format. It addresses the complexity of SBOM creation across different technologies and is motivated by the **EU Cyber Resilience Act (CRA)**, which mandates SBOMs by 2027.
 
-- **Automatic SBOM Generation** — Upload a project and get a complete SBOM
-- **Analysis & Insights** — Detailed breakdowns of dependencies and security metadata
-- **Multiple Formats** — SPDX JSON output with structured insights
-- **Web UI** — Interactive React-based dashboard
-- **CLI Tool** — `sbomhub` command for terminal-based generation and reporting
-- **Cloud Native** — Kubernetes-native deployment with automated scanning
 
 ---
 
-## Architecture
+## Overview
 
-SBOM Hub is a distributed cloud-native platform designed to run on Kubernetes:
+SBOM Hub is a service-oriented system designed to automate the generation of SBOMs from different input sources such as GitHub repositories and ZIP files.  
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                  End User                               │
-├─────────────────────────────────────────────────────────┤
-│ Web Browser or CLI Tool (Node.js)                       │
-└──────────────┬──────────────────────────────────────────┘
-               │ HTTPS to Ingress
-┌──────────────▼──────────────────────────────────────────┐
-│         SBOM Hub Backend (Kubernetes)                   │
-│  REST API for SBOM generation                          │
-│  Workspace management                                   │
-│  Kubernetes job orchestration                           │
-└──────────────┬──────────────────────────────────────────┘
-               │ spawns Jobs
-┌──────────────▼──────────────────────────────────────────┐
-│    SBOM Scanner Pod (Ephemeral, Per-Request)            │
-│  Python + Syft for dependency analysis                 │
-│  Generates SPDX JSON SBOM                              │
-└──────────────┬──────────────────────────────────────────┘
-               │ persists to
-┌──────────────▼──────────────────────────────────────────┐
-│      MongoDB + Persistent Volume Storage                │
-│  Results, metadata, and user projects                  │
-└─────────────────────────────────────────────────────────┘
-```
-
-### Components
-
-| Component | Technology | Purpose |
-|-----------|-----------|---------|
-| Frontend | React + Vite | Web dashboard UI (served via Nginx) |
-| Backend | Node.js/Express | REST API & Kubernetes job orchestration |
-| Scanner | Python + Syft | SBOM generation (runs as ephemeral K8s Jobs) |
-| CLI | Node.js | Command-line interface for terminal users |
-| Data | MongoDB + PVC | Persistent storage for results and projects |
+The platform leverages cloud-native technologies to ensure scalability, automation, and reliability in real-world environments.
 
 ---
 
-## Usage
+## Key Features
 
-### Web Dashboard
-
-Visit the SBOM Hub dashboard UI, upload your project, and download the SBOM JSON.
-
-### Command-Line Interface
-
-```bash
-sbomhub scan /path/to/project
-sbomhub list
-sbomhub download <scan-id>
-```
-
----
-
-## Cloud-Native Deployment
-
-SBOM Hub is designed to run on Kubernetes clusters. All deployment manifests are provided in `k8s/` directory.
-
-### Quick Deploy
-
-See [k8s/README.md](k8s/README.md) for complete deployment instructions.
-
-Requirements:
-- Kubernetes cluster (1.20+)
-- cert-manager (for TLS)
-- ingress-nginx (for routing)
-- Persistent volumes for MongoDB and workspace storage
-
-### Deployment Flow
-
-1. Container images are published to your registry
-2. Kubernetes manifests define services, deployments, storage, and ingress
-3. Deploy all manifests to activate the platform
-4. Users connect via the web dashboard or CLI
+- Automated SBOM generation (no manual intervention)
+- Supports multiple input types:
+  - GitHub repositories
+  - ZIP files
+- Outputs:
+  - SPDX JSON (standard format)
+  - Human-readable TXT reports
+- Kubernetes-based job execution (ephemeral Pods)
+- Real-time job status tracking
+- Authentication system (login/signup)
+- CI/CD integration using GitHub Actions
+- Cloud-native architecture
 
 ---
 
-## Project Structure
+## System Architecture
 
-```
-sbom-hub/
-├── k8s/                               # Kubernetes deployment manifests
-│   ├── 00-namespace.yaml
-│   ├── 01-storage.yaml
-│   ├── 02-mongo.yaml
-│   ├── 03-rbac.yaml
-│   ├── 04-backend.yaml
-│   ├── 05-frontend.yaml
-│   ├── 06-ingress.yaml
-│   └── 07-cluster-issuer.yaml
-└── README.md                          # This file
-```
+The system follows a cloud-native, distributed architecture:
+
+- **Frontend**: React-based dashboard (React + Vite)
+- **Backend**: Node.js + Express API  
+- **Scanner**: Python + Syft (SBOM generation)  
+- **Orchestration**: Kubernetes Jobs  
+- **Storage**:
+  - PVC (temporary data exchange)
+  - MongoDB (final data storage)  
+- **CI/CD**: GitHub Actions  
+- **Deployment**: Kubernetes cluster (Hetzner)
 
 ---
 
-## Security & Privacy
+## Workflow
 
-- SBOM Hub is a closed-source commercial platform
-- Source code is available only to authorized team members
-- All deployments use HTTPS with Let's Encrypt TLS
-- Projects and results are stored in encrypted persistent volumes
-- Scanning jobs run in isolated, ephemeral Kubernetes pods
-- No data is shared with third parties
-
----
-
-## Support & Licensing
-
-For deployment, licensing, or technical support, contact the SBOM Hub team.
+1. User submits a project (GitHub URL or ZIP)
+2. Backend validates input
+3. Kubernetes Job is created
+4. Scanner Pod runs SBOM generation
+5. Output is written to shared PVC
+6. Backend reads results and stores them in MongoDB
+7. User retrieves SBOM and report
 
 ---
 
-## Attribution
+## Technologies Used
 
-SBOM Hub is developed by the SBOMHub Team:
-- Elham Rastighahfarokhi
-- Mehdi Nourivahid
-- Mostafa Sharghi
+| Component         | Technology            | Description                                   |
+|------------------|---------------------|-----------------------------------------------|
+| Frontend         | React + Vite        | Web dashboard, served via Nginx               |
+| Backend          | Node.js + Express   | REST API and system orchestration             |
+| Scanner          | Python + Syft       | Runs as ephemeral Kubernetes Jobs             |
+| Containerization | Docker              | Packaging and environment consistency         |
+| Orchestration    | Kubernetes          | Job execution, scaling, and resource management|
+| Database         | MongoDB + PVC       | Persistent storage for results and metadata   |
+| CI/CD            | GitHub Actions      | Automated build and deployment pipelines      |
+| Infrastructure   | Hetzner Cloud       | Cloud environment for Kubernetes cluster      |
+| CLI              | Node.js             | Command-line interface for terminal users     |
+
+---
+
+## CI/CD Pipeline
+
+The project uses GitHub Actions to automate:
+
+- Build process
+- Docker image creation
+- Deployment to Kubernetes
+
+This ensures:
+- Faster updates
+- Reduced human errors
+- Consistent deployments
+
+---
+
+## Evaluation
+
+The system was evaluated based on:
+
+- Execution time
+- CPU and memory usage
+- Concurrency (parallel job handling)
+
+Results show that the system performs efficiently and scales well in real-world conditions.
+
+---
+
+## Thesis Information
+
+- Program: Smart IoT Systems and Networking  
+- University: Metropolia UAS  
+- Collaboration: Nokia (SBOM-QA Project)  
+- Year: 2025–2026  
+
+---
+
+## Related Project
+
+- SBOM-QA Benchmarking Project:  
+  https://nokia.github.io/SBOM-QA/
+
+---
+
+## Future Work
+
+- Support for additional tools (ORT , SCANOSS)
+- Advanced vulnerability analysis
+- Improved ecosystem detection
+- Enhanced dashboard for analytics
+
+---
+
+## License
+
+This project is developed for academic purposes.  
+License details can be added based on future use.
+
+---
+
+## Authors & Supervisors
+
+Authors: **Elham Rastighahfarokhi** & **Mehdi Nourivahid** & **Mostafa Sharghi** 
+Metropolia University of Applied Sciences  
+Supervisor: **Markku Niiranen**
+Technical lead: **Gergely Csatari**
 
 ---
 
